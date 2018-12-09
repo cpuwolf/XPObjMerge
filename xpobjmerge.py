@@ -79,13 +79,14 @@ def findsection(data,keyword):
     return result   
 
 class objidx():
-    def __init__(self):
+    def __init__(self, bidx=0):
         self.idxs=[]
+        self.baseidx=bidx
     def processsection_dx(self,seclines):
         for line in seclines:
             str = line[2]
             cols=str.split()
-            self.idxs.append(cols[1])
+            self.idxs.append(self.baseidx+int(cols[1]))
     def processsection_dx10(self,seclines):
         for line in seclines:
             str = line[2]
@@ -93,31 +94,29 @@ class objidx():
             num = len(cols)
             if  num >= 11:
                 for i in range(1,10):
-                    self.idxs.append(cols[i])
+                    self.idxs.append(self.baseidx+int(cols[i]))
 
         
 class xpobj():
     def __init__(self):
-        self.newdata=[]
         self.oidx = objidx()
-    def processxpobj(self,fileobj):
-        newdata=[]
-        with open(fileobj,"rU") as f:
+    def processxpobj(self,filepath):
+        with open(filepath,"rU") as f:
             data = f.read()
-            vt=findsection(data,"VT")
+            self.vt=findsection(data,"VT")
             #print vt
-            dx10=findsection(data,"DX10")
+            self.dx10=findsection(data,"DX10")
             #print dx10
-            self.oidx.processsection_dx10(dx10)
-            dx=findsection(data,"DX")
+            self.oidx.processsection_dx10(self.dx10)
+            self.dx=findsection(data,"DX")
             #print dx
-            self.oidx.processsection_dx(dx)
+            self.oidx.processsection_dx(self.dx)
             print "idx max=", len(self.oidx.idxs)
-            print "vt max=", len(vt)
+            print "vt max=", len(self.vt)
                    
-        #shutil.copy(fileobj, fileobj+".orig.obj")
+        #shutil.copy(filepath, filepath+".orig.obj")
             
-        #with open(fileobj+".obj","w") as fw:
+        #with open(filepath+".obj","w") as fw:
         #    for linestr in newdata:
         #        fw.write(linestr)
         return True
