@@ -121,6 +121,12 @@ class xpobj():
         #        fw.write(linestr)
         return True
 
+def xpobjmerge(filepath1, filepath2):
+    mainobj=xpobj()
+    mainobj.processxpobj(filepath1)
+    secobj=xpobj()
+    secobj.processxpobj(filepath2)
+
 def loadinputfile(filetxt):
     cookies = []
     wewant = []
@@ -196,8 +202,7 @@ class MyThread(QThread):
         self.wait()
     def run(self):
         self.set_text.emit("<h1>please wait...</h1>")
-        mainobj=xpobj()
-        mainobj.processxpobj(self.text_valuepath)
+        xpobjmerge(self.text_valuepath, self.text_folderpath)
         self.set_text.emit("<h1>done</h1>")
         self.set_done.emit()
 
