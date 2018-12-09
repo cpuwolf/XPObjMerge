@@ -172,6 +172,24 @@ def xpobjmerge(filepath1, filepath2):
     newdata+="POINT_COUNTS\t"+str(tris)+"\t"+str(mainobj.pc_lines)+"\t"+str(mainobj.pc_lites)+"\t"+str(indices)
     newdata+=mainobj.data[mainobj.pc_end:mainobj.idx_start]
     newdata+=secobj.data[secobj.vt_start:secobj.vt_end]
+    # merge idx
+    newidx=list(mainobj.oidx.idxs)
+    for id in secobj.oidx.idxs:
+        newidx.append(mainobj.pc_tris+id)
+    print "new idx number=", len(newidx)
+    #write indices
+    left=len(newidx)
+    j=0
+    while left >=10:
+        newdata+="IDX10"
+        for i in range(j,j+10):
+            newdata+= "\t"+str(newidx[i])
+        newdata+="\n"
+        j+=10
+        left-=10
+    if left > 0:
+        for i in range(j,j+left):
+            newdata+= "IDX \t"+str(newidx[i])+"\n"
 
     with open(filepath1+".merge.obj","w") as fw:
             fw.write(newdata)
