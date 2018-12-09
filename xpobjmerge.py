@@ -49,7 +49,7 @@ def findwholeline(data,keyword,startidx):
     return [-1,-1]
 
 
-def findsection(data,keywordstart,keywordend):
+def findsectionstartend(data,keywordstart,keywordend):
     searchidx=0
     result=[]
     while searchidx <= len(data):
@@ -62,6 +62,18 @@ def findsection(data,keywordstart,keywordend):
             else:
                 print "error"
                 break
+        else:
+            break
+    return result
+
+def findsection(data,keyword):
+    searchidx=0
+    result=[]
+    while searchidx <= len(data):
+        [idxstart,idxend]=findwholeline(data,keyword,searchidx)
+        if (idxstart != -1) and (idxend != -1):
+            searchidx=idxend
+            result.append([idxstart,idxend,data[idxstart:idxend]])
         else:
             break
     return result   
@@ -77,26 +89,19 @@ def checkxpobj(data):
 def processxpobj(fileobj):
     newdata=[]
     with open(fileobj,"rU") as f:
-        for linestr in f:
-            cols=linestr.split()
-            cols_num = len(cols)
-            if cols_num > 9 and cols[0] =="VT":
-                    newlinestr = ""
-                    for i in range(cols_num):
-                        if i == 7 or i == 8:
-                            print cols[i], '%.9f' % (float(cols[i])/2.0)
-                            cols[i]='%.9f' % (float(cols[i])/2.0)
-                        newlinestr = newlinestr+cols[i] + '\t'
-                    newlinestr = newlinestr+'\r\n'
-            else:
-                newlinestr = linestr
-            newdata.append(newlinestr)
+        data = f.read()
+        vt=findsection(data,"VT")
+        print vt
+        dx10=findsection(data,"DX10")
+        print dx10
+        dx=findsection(data,"DX")
+        print dx
                    
     #shutil.copy(fileobj, fileobj+".orig.obj")
         
-    with open(fileobj+".obj","w") as fw:
-        for linestr in newdata:
-            fw.write(linestr)
+    #with open(fileobj+".obj","w") as fw:
+    #    for linestr in newdata:
+    #        fw.write(linestr)
     return True
 
 def loadinputfile(filetxt):
@@ -129,26 +134,6 @@ def loadinputfile(filetxt):
         return wewant
     return wewant
     
-def findxpobj(root,cklist):
-    written = 0
-    for path, dirs, files in os.walk(root):
-        for file in files:
-            if file.endswith(".obj"):            # this line is new
-                print os.path.join(path, file)
-                if processxpobj(os.path.join(path, file),cklist):
-                    written += 1
-                else:
-                    return -1;
-    return written
-
-def backupfolder(src):
-    try:
-        shutil.copytree(src, src+".flex.old")
-        return 1
-    except OSError as exc:
-        if exc.errno == errno.EEXIST:
-            return 0
-        return -1
 
 def user_path(relative_path):
     base_path = user_data_dir("xpobjmerge","cpuwolf")
