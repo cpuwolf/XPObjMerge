@@ -77,16 +77,28 @@ def findsection(data,keyword):
         else:
             break
     return result   
+def getsectionstarteng(seclines):
+    if len(seclines) > 0:
+        return [seclines[0][0],seclines[-1][1]]
+    else:
+        return [0,0]
 
 class objidx():
     def __init__(self, bidx=0):
         self.idxs=[]
         self.baseidx=bidx
+        self.start =0
+        self.end=0
     def processsection_dx(self,seclines):
         for line in seclines:
             str = line[2]
             cols=str.split()
             self.idxs.append(self.baseidx+int(cols[1]))
+        [s, e]=getsectionstarteng(seclines)
+        if self.end == self.start:
+            self.start = s
+        if e > self.end:
+            self.end=e
     def processsection_dx10(self,seclines):
         for line in seclines:
             str = line[2]
@@ -95,6 +107,9 @@ class objidx():
             if  num >= 11:
                 for i in range(1,10):
                     self.idxs.append(self.baseidx+int(cols[i]))
+        [self.start, self.end]=getsectionstarteng(seclines)
+    def getsectionstarteng(self):
+        return [self.start, self.end]
 
         
 class xpobj():
@@ -102,30 +117,64 @@ class xpobj():
         self.oidx = objidx()
     def processxpobj(self,filepath):
         with open(filepath,"rU") as f:
-            data = f.read()
-            self.vt=findsection(data,"VT")
+            self.data = f.read()
+            self.pc=findsection(self.data,"POINT_COUNTS")
+            [self.pc_start,self.pc_end]= getsectionstarteng(self.pc)
+            [self.pc_tris,self.pc_lines,self.pc_lites,self.pc_indices]=self.processsection_pc()
+            
+
+            self.vt=findsection(self.data,"VT")
             #print vt
-            self.dx10=findsection(data,"DX10")
+            [self.vt_start,self.vt_end]= getsectionstarteng(self.vt)
+            print "vt section ",[self.vt_start,self.vt_end]
+            self.dx10=findsection(self.data,"DX10")
             #print dx10
             self.oidx.processsection_dx10(self.dx10)
-            self.dx=findsection(data,"DX")
+            self.dx=findsection(self.data,"DX")
             #print dx
             self.oidx.processsection_dx(self.dx)
-            print "idx max=", len(self.oidx.idxs)
-            print "vt max=", len(self.vt)
+
+            if self.pc_tris == len(self.vt):
+                print "vt max=", len(self.vt)
+            else:
+                print "error tris number"
+            if self.pc_indices == len(self.oidx.idxs):
+                print "idx max=", len(self.oidx.idxs)
+            else:
+                print "error indices number"
+            
+            [self.idx_start,self.idx_end]= self.oidx.getsectionstarteng()
+            print "idx section ",[self.idx_start,self.idx_end]
                    
         #shutil.copy(filepath, filepath+".orig.obj")
             
-        #with open(filepath+".obj","w") as fw:
-        #    for linestr in newdata:
-        #        fw.write(linestr)
+        
         return True
+    def processsection_pc(self):
+        if len(self.pc) != 1:
+            print "error: processsection_pc"
+        for line in self.pc:
+            str = line[2]
+            cols=str.split()
+            return [int(cols[1]),int(cols[2]),int(cols[3]),int(cols[4])]
+
 
 def xpobjmerge(filepath1, filepath2):
+    newdata=[]
     mainobj=xpobj()
     mainobj.processxpobj(filepath1)
     secobj=xpobj()
     secobj.processxpobj(filepath2)
+    #use main header
+    newdata=mainobj.data[:mainobj.pc_start]
+    tris = mainobj.pc_tris + secobj.pc_tris
+    indices = mainobj.pc_indices + secobj.pc_indices
+    newdata+="POINT_COUNTS\t"+str(tris)+"\t"+str(mainobj.pc_lines)+"\t"+str(mainobj.pc_lites)+"\t"+str(indices)
+    newdata+=mainobj.data[mainobj.pc_end:mainobj.idx_start]
+    newdata+=secobj.data[secobj.vt_start:secobj.vt_end]
+
+    with open(filepath1+".merge.obj","w") as fw:
+            fw.write(newdata)
 
 def loadinputfile(filetxt):
     cookies = []
