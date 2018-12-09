@@ -105,7 +105,7 @@ class objidx():
             cols=str.split()
             num = len(cols)
             if  num >= 11:
-                for i in range(1,10):
+                for i in range(1,11):
                     self.idxs.append(self.baseidx+int(cols[i]))
         [self.start, self.end]=getsectionstarteng(seclines)
     def getsectionstarteng(self):
@@ -127,11 +127,11 @@ class xpobj():
             #print vt
             [self.vt_start,self.vt_end]= getsectionstarteng(self.vt)
             print "vt section ",[self.vt_start,self.vt_end]
-            self.dx10=findsection(self.data,"DX10")
-            #print dx10
+            self.dx10=findsection(self.data,"IDX10")
+            print len(self.dx10)
             self.oidx.processsection_dx10(self.dx10)
-            self.dx=findsection(self.data,"DX")
-            #print dx
+            self.dx=findsection(self.data,"IDX")
+            print len(self.dx)
             self.oidx.processsection_dx(self.dx)
 
             if self.pc_tris == len(self.vt):
@@ -171,12 +171,16 @@ def xpobjmerge(filepath1, filepath2):
     indices = mainobj.pc_indices + secobj.pc_indices
     newdata+="POINT_COUNTS\t"+str(tris)+"\t"+str(mainobj.pc_lines)+"\t"+str(mainobj.pc_lites)+"\t"+str(indices)
     newdata+=mainobj.data[mainobj.pc_end:mainobj.idx_start]
-    newdata+=secobj.data[secobj.vt_start:secobj.vt_end]
+    newdata+=secobj.data[secobj.vt_start:secobj.idx_start]
     # merge idx
+    print "main idx number", len(mainobj.oidx.idxs)
     newidx=list(mainobj.oidx.idxs)
-    for id in secobj.oidx.idxs:
-        newidx.append(mainobj.pc_tris+id)
+    for i in range(len(secobj.oidx.idxs)):
+        newidx.append(int(mainobj.pc_tris+secobj.oidx.idxs[i]))
+    
     print "new idx number=", len(newidx)
+    if(len(newidx) != indices):
+        print "error idx number", len(secobj.oidx.idxs)
     #write indices
     left=len(newidx)
     j=0
@@ -190,6 +194,7 @@ def xpobjmerge(filepath1, filepath2):
     if left > 0:
         for i in range(j,j+left):
             newdata+= "IDX \t"+str(newidx[i])+"\n"
+    #left part of .obj file
 
     with open(filepath1+".merge.obj","w") as fw:
             fw.write(newdata)
