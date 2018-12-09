@@ -78,31 +78,49 @@ def findsection(data,keyword):
             break
     return result   
 
-def checkxpobj(data):
-    a=findwholeline(data,"wing_tip_deflection_deg",0)
-    b=findwholeline(data,"vz_acf_axis",0)
-    if a[0] == -1 and a[1] == -1 and b[0] == -1 and b[1] == -1:
-        return True
-    return False;
-        
+class objidx():
+    def __init__(self):
+        self.idxs=[]
+    def processsection_dx(self,seclines):
+        for line in seclines:
+            str = line[2]
+            cols=str.split()
+            self.idxs.append(cols[1])
+    def processsection_dx10(self,seclines):
+        for line in seclines:
+            str = line[2]
+            cols=str.split()
+            num = len(cols)
+            if  num >= 11:
+                for i in range(1,10):
+                    self.idxs.append(cols[i])
 
-def processxpobj(fileobj):
-    newdata=[]
-    with open(fileobj,"rU") as f:
-        data = f.read()
-        vt=findsection(data,"VT")
-        print vt
-        dx10=findsection(data,"DX10")
-        print dx10
-        dx=findsection(data,"DX")
-        print dx
-                   
-    #shutil.copy(fileobj, fileobj+".orig.obj")
         
-    #with open(fileobj+".obj","w") as fw:
-    #    for linestr in newdata:
-    #        fw.write(linestr)
-    return True
+class xpobj():
+    def __init__(self):
+        self.newdata=[]
+        self.oidx = objidx()
+    def processxpobj(self,fileobj):
+        newdata=[]
+        with open(fileobj,"rU") as f:
+            data = f.read()
+            vt=findsection(data,"VT")
+            #print vt
+            dx10=findsection(data,"DX10")
+            #print dx10
+            self.oidx.processsection_dx10(dx10)
+            dx=findsection(data,"DX")
+            #print dx
+            self.oidx.processsection_dx(dx)
+            print "idx max=", len(self.oidx.idxs)
+            print "vt max=", len(vt)
+                   
+        #shutil.copy(fileobj, fileobj+".orig.obj")
+            
+        #with open(fileobj+".obj","w") as fw:
+        #    for linestr in newdata:
+        #        fw.write(linestr)
+        return True
 
 def loadinputfile(filetxt):
     cookies = []
@@ -179,7 +197,8 @@ class MyThread(QThread):
         self.wait()
     def run(self):
         self.set_text.emit("<h1>please wait...</h1>")
-        processxpobj(self.text_valuepath)
+        mainobj=xpobj()
+        mainobj.processxpobj(self.text_valuepath)
         self.set_text.emit("<h1>done</h1>")
         self.set_done.emit()
 
