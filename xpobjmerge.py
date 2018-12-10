@@ -172,9 +172,11 @@ class xpobj():
 def xpobjmerge(filepath1, filepath2):
     newdata=[]
     mainobj=xpobj()
-    mainobj.processxpobj(filepath1)
+    if not mainobj.processxpobj(filepath1):
+        return False
     secobj=xpobj()
-    secobj.processxpobj(filepath2)
+    if not secobj.processxpobj(filepath2):
+        return False
     #use main header
     newdata=mainobj.data[:mainobj.pc_start]
     tris = mainobj.pc_tris + secobj.pc_tris
@@ -191,6 +193,7 @@ def xpobjmerge(filepath1, filepath2):
     print "new idx number=", len(newidx)
     if(len(newidx) != indices):
         print "error idx number", len(secobj.oidx.idxs)
+        return False
     #write indices
     left=len(newidx)
     j=0
@@ -222,36 +225,7 @@ def xpobjmerge(filepath1, filepath2):
 
     with open(filepath1+".merge.obj","w") as fw:
             fw.write(newdata)
-
-def loadinputfile(filetxt):
-    cookies = []
-    wewant = []
-    try:
-        with open(filetxt,"rU") as f:
-            data = f.read()
-            sections=findsection(data,"ANIM_rotate_begin ","ANIM_rotate_end")
-            index=1
-            while index < len(sections):
-                if sections[index][0]-sections[index-1][1] == 1:
-                    cookies.append([sections[index-1][0],sections[index][1],sections[index-1][2]])
-                    tmpidx=index
-                    tmpidx+=2
-                    if tmpidx < len(sections):
-                        index+=2
-                    else:
-                        index+=1
-                else:
-                    cookies.append(sections[index])
-                    index+=1
-            #print cookies
-            for cookie in cookies:
-                sp=cookie[2].split(' ')
-                wewant.append([sp[-1],data[cookie[0]:cookie[1]]])
-                #wewant.append([cookie[2],data[cookie[0]:cookie[1]]])
-            print wewant, len(wewant)
-    except IOError:
-        return wewant
-    return wewant
+    return True
     
 
 def user_path(relative_path):
@@ -261,7 +235,10 @@ def user_path(relative_path):
     mpath = os.path.join(base_path, relative_path)
     return mpath
 
-
+def internal_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_path, relative_path)
     
 def resource_path(relative_path): # needed for bundling
     mpath = user_path(relative_path)
@@ -354,6 +331,7 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
 
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
+    app.setWindowIcon(QtGui.QIcon(internal_path('777.ico')))
     window = MyApp()
     window.show()
     app.exec_()
