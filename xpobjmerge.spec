@@ -6,7 +6,7 @@ block_cipher = None
 a = Analysis(['xpobjmerge.py'],
              pathex=['/Users/apple/code/xpobjmerge'],
              binaries=[],
-             datas=[('main.ui','.'),
+             datas=[('main.ui','.'),('777.ico','.'),
              ('xpobjmerge.cfg','.')],
              hiddenimports=[],
              hookspath=[],
