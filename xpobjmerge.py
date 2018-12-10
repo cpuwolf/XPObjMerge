@@ -89,25 +89,22 @@ class objidx():
         self.baseidx=bidx
         self.start =0
         self.end=0
-    def processsection_dx(self,seclines):
-        for line in seclines:
-            str = line[2]
-            cols=str.split()
-            self.idxs.append(self.baseidx+int(cols[1]))
-        [s, e]=getsectionstarteng(seclines)
-        if self.end == self.start:
-            self.start = s
-        if e > self.end:
-            self.end=e
-    def processsection_dx10(self,seclines):
+
+    def processsection_idx(self,seclines):
         for line in seclines:
             str = line[2]
             cols=str.split()
             num = len(cols)
-            if  num >= 11:
+            if  num >= 11 and cols[0]=="IDX10":
                 for i in range(1,11):
                     self.idxs.append(self.baseidx+int(cols[i]))
+            elif num >= 2 and cols[0]=="IDX":
+                self.idxs.append(self.baseidx+int(cols[1]))
+            else:
+                print "error processsection_idx", cols
+
         [self.start, self.end]=getsectionstarteng(seclines)
+
     def getsectionstarteng(self):
         return [self.start, self.end]
 
@@ -127,12 +124,10 @@ class xpobj():
             #print vt
             [self.vt_start,self.vt_end]= getsectionstarteng(self.vt)
             print "vt section ",[self.vt_start,self.vt_end]
-            self.dx10=findsection(self.data,"IDX10")
-            print len(self.dx10)
-            self.oidx.processsection_dx10(self.dx10)
+
             self.dx=findsection(self.data,"IDX")
             print len(self.dx)
-            self.oidx.processsection_dx(self.dx)
+            self.oidx.processsection_idx(self.dx)
 
             if self.pc_tris == len(self.vt):
                 print "vt max=", len(self.vt)
