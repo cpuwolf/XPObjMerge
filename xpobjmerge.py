@@ -212,7 +212,7 @@ def xpobjmerge(filepath1, filepath2):
         i = 0
         newdata += secobj.data[secobj.idx_end:secobj.tris[0][0]]
         while i < lenwewant:
-            tris_idx=secobj.trislist[i][0]+mainobj.pc_tris
+            tris_idx=secobj.trislist[i][0]+mainobj.pc_indices
             tris_txt="TRIS\t"+str(tris_idx)+"\t"+str(secobj.trislist[i][1])
             if i + 1 < lenwewant:
                 newdata += tris_txt+secobj.data[secobj.tris[i][1]:secobj.tris[i+1][0]]
