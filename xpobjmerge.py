@@ -104,6 +104,7 @@ class objidx():
                 print "error processsection_idx", cols
 
         [self.start, self.end]=getsectionstarteng(seclines)
+          
 
     def getsectionstarteng(self):
         return [self.start, self.end]
@@ -112,6 +113,7 @@ class objidx():
 class xpobj():
     def __init__(self):
         self.oidx = objidx()
+        self.trislist = []
     def processxpobj(self,filepath):
         with open(filepath,"rU") as f:
             self.data = f.read()
@@ -126,22 +128,26 @@ class xpobj():
             print "vt section ",[self.vt_start,self.vt_end]
 
             self.dx=findsection(self.data,"IDX")
-            print len(self.dx)
+            #print len(self.dx)
             self.oidx.processsection_idx(self.dx)
 
             if self.pc_tris == len(self.vt):
                 print "vt max=", len(self.vt)
             else:
                 print "error tris number"
+                return False
             if self.pc_indices == len(self.oidx.idxs):
                 print "idx max=", len(self.oidx.idxs)
             else:
                 print "error indices number"
+                return False
             
             [self.idx_start,self.idx_end]= self.oidx.getsectionstarteng()
             print "idx section ",[self.idx_start,self.idx_end]
-                   
-        #shutil.copy(filepath, filepath+".orig.obj")
+
+            self.tris=findsection(self.data,"TRIS")
+            print "tris max=", len(self.tris)
+            self.processsection_tris(self.tris)
             
         
         return True
@@ -152,6 +158,15 @@ class xpobj():
             str = line[2]
             cols=str.split()
             return [int(cols[1]),int(cols[2]),int(cols[3]),int(cols[4])]
+    def processsection_tris(self,seclines):
+        for line in seclines:
+            str = line[2]
+            cols=str.split()
+            num = len(cols)
+            if num >= 3:
+                self.trislist.append([int(cols[1]),int(cols[2])])
+            else:
+                print "error: processsection_tris"
 
 
 def xpobjmerge(filepath1, filepath2):
@@ -189,8 +204,21 @@ def xpobjmerge(filepath1, filepath2):
     if left > 0:
         for i in range(j,j+left):
             newdata+= "IDX \t"+str(newidx[i])+"\n"
-    #left part of .obj file
+    #left part of main .obj file
     newdata+="\n"+mainobj.data[mainobj.idx_end:]
+    #left part of secondary .obj file
+    lenwewant = len(secobj.tris)
+    if lenwewant > 0:
+        i = 0
+        newdata += secobj.data[secobj.idx_end:secobj.tris[0][0]]
+        while i < lenwewant:
+            tris_idx=secobj.trislist[i][0]+mainobj.pc_tris
+            tris_txt="TRIS\t"+str(tris_idx)+"\t"+str(secobj.trislist[i][1])
+            if i + 1 < lenwewant:
+                newdata += tris_txt+secobj.data[secobj.tris[i][1]:secobj.tris[i+1][0]]
+            else:
+                newdata += tris_txt+secobj.data[secobj.tris[i][1]:]
+            i += 1
 
     with open(filepath1+".merge.obj","w") as fw:
             fw.write(newdata)
