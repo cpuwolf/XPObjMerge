@@ -190,6 +190,7 @@ def xpobjmerge(filepath1, filepath2):
         for i in range(j,j+left):
             newdata+= "IDX \t"+str(newidx[i])+"\n"
     #left part of .obj file
+    newdata+="\n"+mainobj.data[mainobj.idx_end:]
 
     with open(filepath1+".merge.obj","w") as fw:
             fw.write(newdata)
