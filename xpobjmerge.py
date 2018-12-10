@@ -15,10 +15,11 @@ import os
 import shutil, errno
 import sys
 from PyQt4 import QtCore, QtGui, uic
-from PyQt4.QtCore import QThread
+from PyQt4.QtCore import QThread, QUrl
 from PyQt4.QtGui import QFileDialog
 import ConfigParser
 import logging
+import logging.handlers
 import tempfile
 from appdirs import *
 
@@ -26,11 +27,11 @@ from appdirs import *
 def findwholeline(data,keyword,startidx):
     idx=data[startidx:].find(keyword)
     if idx != -1:
-        #print idx
+        logger.debug( idx)
         idxtmpstart = startidx+idx
         idxtmpend=data[idxtmpstart:].find("\n")
         idxend = idxtmpstart +idxtmpend
-        #print idxend
+        #logger.debug( idxend)
         if idxtmpend != -1:
             lines=data[:idxend].splitlines()
             #print lines[-1]
@@ -60,7 +61,7 @@ def findsectionstartend(data,keywordstart,keywordend):
                 searchidx=idxsecend
                 result.append([idxstart,idxsecend,data[idxstart:idxend]])
             else:
-                print "error"
+                logger.error( "error")
                 break
         else:
             break
@@ -101,7 +102,7 @@ class objidx():
             elif num >= 2 and cols[0]=="IDX":
                 self.idxs.append(self.baseidx+int(cols[1]))
             else:
-                print "error processsection_idx", cols
+                logger.error( "error processsection_idx", len(cols))
 
         [self.start, self.end]=getsectionstarteng(seclines)
           
@@ -132,28 +133,28 @@ class xpobj():
             self.oidx.processsection_idx(self.dx)
 
             if self.pc_tris == len(self.vt):
-                print "vt max=", len(self.vt)
+                logger.info( "vt max="+str(len(self.vt)))
             else:
-                print "error tris number"
+                logger.error(  "error tris number")
                 return False
             if self.pc_indices == len(self.oidx.idxs):
-                print "idx max=", len(self.oidx.idxs)
+                logger.info("idx max="+str(len(self.oidx.idxs)))
             else:
-                print "error indices number"
+                logger.error(  "error indices number")
                 return False
             
             [self.idx_start,self.idx_end]= self.oidx.getsectionstarteng()
             print "idx section ",[self.idx_start,self.idx_end]
 
             self.tris=findsection(self.data,"TRIS")
-            print "tris max=", len(self.tris)
+            logger.info("tris max="+str(len(self.tris)))
             self.processsection_tris(self.tris)
             
         
         return True
     def processsection_pc(self):
         if len(self.pc) != 1:
-            print "error: processsection_pc"
+            logger.error( "error: processsection_pc")
         for line in self.pc:
             str = line[2]
             cols=str.split()
@@ -166,7 +167,7 @@ class xpobj():
             if num >= 3:
                 self.trislist.append([int(cols[1]),int(cols[2])])
             else:
-                print "error: processsection_tris"
+                logger.error( "error: processsection_tris")
 
 
 def xpobjmerge(filepath1, filepath2):
@@ -192,7 +193,7 @@ def xpobjmerge(filepath1, filepath2):
     
     print "new idx number=", len(newidx)
     if(len(newidx) != indices):
-        print "error idx number", len(secobj.oidx.idxs)
+        logger.error("error idx number", len(secobj.oidx.idxs))
         return False
     #write indices
     left=len(newidx)
@@ -275,8 +276,16 @@ class MyThread(QThread):
         self.wait()
     def run(self):
         self.set_text.emit("<h1>please wait...</h1>")
-        xpobjmerge(self.text_valuepath, self.text_folderpath)
-        self.set_text.emit("<h1>done</h1>")
+        ret=xpobjmerge(self.text_valuepath, self.text_folderpath)
+        logpath = user_path('xpobjmerge.log')
+        html="""
+        <html><head><head/><body>
+        <h6>logfile:</h6><br/>
+        <a href='%s'>%s</a>
+        <h1>done %d</h1>
+        </body></html>
+        """ % (QUrl.fromLocalFile(logpath), logpath, ret)
+        self.set_text.emit(html)
         self.set_done.emit()
 
 #debug_logger = logging.getLogger('wingflex')
@@ -330,9 +339,17 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
 
 
 if __name__ == "__main__":
+    logger = logging.getLogger("xpobjmerge")
+    logger.setLevel(logging.DEBUG)
+
+    f_handler = logging.FileHandler(user_path('xpobjmerge.log'))
+    f_handler.setLevel(logging.DEBUG)
+    f_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s [:%(lineno)d] - %(message)s"))
+    logger.addHandler(f_handler)
+
     app = QtGui.QApplication(sys.argv)
     app.setWindowIcon(QtGui.QIcon(internal_path('777.ico')))
     window = MyApp()
     window.show()
     app.exec_()
-print "all done!"
+logger.debug( "all done!")
